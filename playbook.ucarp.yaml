@@ -1,0 +1,43 @@
+---
+- hosts: cluster-node
+  remote_user: pi
+  vars:
+    user: pi
+  tasks:
+
+  - name: create virtual_ip dir  
+    file:
+      path: /home/{{user}}/virtual_ip/ucarp
+      state: directory
+
+  - name: copy Dockerfile
+    
+    copy:
+      src: Dockerfile
+      dest: /home/{{user}}/virtual_ip/Dockerfile
+ 
+
+  - name: copy ucarp script
+    copy: 
+      src: ucarp/{{item}}.sh
+      dest: /home/{{user}}/virtual_ip/ucarp/{{item}}.sh
+    with_items:
+      - run
+      - up
+      - down
+
+  - name: copy start
+    copy: 
+      src: start.sh
+      dest: /home/{{user}}/virtual_ip/start.sh
+
+  - name: copy supervisor conf
+    copy: 
+      src: supervisord.conf
+      dest: /home/{{user}}/virtual_ip/supervisord.conf
+
+  - name: docker build
+    shell: "cd /home/{{user}}/virtual_ip/; docker build -t virtual_ip ."
+
+  - name: start virtual_ip
+    shell: docker run -d --rm --privileged --net=host --name virtual_ip_service virtual_ip supervisord -n -c /etc/supervisor/supervisord.conf
